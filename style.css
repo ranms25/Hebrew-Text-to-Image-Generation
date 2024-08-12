@@ -1,0 +1,175 @@
+/* style.css */
+
+/* Import Alef font from Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Alef:wght@400;700&display=swap');
+
+/* Hide default Streamlit elements */
+#MainMenu { visibility: hidden; }
+footer { visibility: hidden; }
+header { visibility: hidden; }
+
+/* Set body properties for right-to-left (RTL) languages and general styling */
+body {
+    direction: RTL;
+    unicode-bidi: embed;
+    font-size: 16px;
+    padding-top: 20px; /* Add padding to ensure elements are not cut off */
+    font-family: Calibri, sans-serif;
+}
+
+/* Specific styling for elements containing Hebrew text */
+body .hebrew-text {
+    font-size: 22px;
+    direction: rtl;
+    text-align: right;
+    font-family: Calibri, sans-serif;
+}
+
+/* Global styling for all elements to ensure RTL alignment and disable transitions */
+* {
+    text-align: right;
+    direction: rtl;
+    transition: none !important;
+    font-family: Calibri, sans-serif;
+}
+
+/* Main title styling */
+h1.title_html {
+    position: relative;
+    right: -50px;
+    margin-bottom: 0px;
+    font-family: Calibri, sans-serif;
+    color: #34495e;
+}
+
+/* Subheader styling */
+h4.subheader_html {
+    position: relative;
+    right: -50px;
+    margin-top: -20px;
+    font-family: Calibri, sans-serif;
+    color: #34495e;
+}
+
+/* Input fields styling for text inputs and text areas */
+.stTextInput input, .stTextArea textarea {
+    text-align: right;
+    font-family: Calibri, sans-serif;
+}
+
+/* Container for Streamlit headings adjustments */
+.stHeadingContainer {
+    position: relative;
+    right: -48px;
+}
+
+/* Specific container adjustments for better layout containment */
+.container {
+    contain: layout style size;
+}
+
+/* Adjustments for the select box component */
+.stSelectbox {
+    position: relative;
+    margin-bottom: 25px;
+}
+
+/* Subtitle for image selection */
+h3.subtitle {
+    position: relative;
+    right: -50px;
+    font-family: Calibri, sans-serif;
+    color: #34495e;
+}
+
+/* Instructions for image selection */
+h5.instructions {
+    position: relative;
+    right: -50px;
+    font-family: Calibri, sans-serif;
+    color: #34495e;
+}
+
+/* Checkbox positioning adjustments */
+.stCheckbox {
+    position: relative;
+    right: -10px;
+    bottom: 10px
+}
+
+/* Download button styling */
+.download-button {
+    background-color: white;
+    color: black;
+    border: 2px solid #6a00ff;
+    padding: 10px 20px;
+    font-size: 16px;
+    border-radius: 5px;
+    text-align: center;
+    display: inline-block;
+    margin: 10px 0;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.3s ease;
+}
+
+/* Hover effect for the download button */
+.download-button:hover {
+    background-color: #6a00ff;
+    color: white;
+}
+
+/* Defines the page size and margins for print or PDF generation */
+@page {
+    size: A4;
+    margin: 20mm 15mm 20mm 15mm;
+}
+
+/* Body styling specific to PDF content */
+body .pdf-body {
+    font-size: 18px;
+    direction: rtl;
+    unicode-bidi: embed;
+    font-family: 'Alef', sans-serif;
+    margin: 0;
+    padding: 0;
+}
+
+/* Styling for Hebrew text within PDFs */
+body .hebrew-text-pdf {
+    font-size: 18px;
+    direction: rtl;
+    text-align: right;
+    font-family: 'Alef', sans-serif;
+    margin-bottom: 20px;
+    line-height: 1.5;
+}
+
+/* Custom title styling for PDFs */
+body .custom-title-pdf {
+    font-size: 40px;
+    text-align: right;
+    direction: rtl;
+    font-family: 'Alef', sans-serif;
+    margin-top: 0;
+    margin-bottom: 5px;
+    line-height: 1.5;
+}
+
+/* Styling for author names in PDFs */
+body .custom-author-pdf {
+    font-size: 20px;
+    text-align: right;
+    direction: rtl;
+    font-family: 'Alef', sans-serif;
+    margin-top: 0;
+    margin-bottom: 20px;
+}
+
+/* Styling for images within PDFs */
+body .resized-image-pdf {
+    width: 300px;
+    height: auto;
+    display: inline-block;
+    margin-bottom: 5px;
+}
