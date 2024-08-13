@@ -17,8 +17,8 @@ body {
     font-family: Calibri, sans-serif;
 }
 
-/* Specific styling for elements containing Hebrew text */
-body .hebrew-text {
+/* Specific styling for elements containing Hebrew text for expander */
+body .stExpander .hebrew-text {
     font-size: 22px;
     direction: rtl;
     text-align: right;
