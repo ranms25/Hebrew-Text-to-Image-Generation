@@ -33,9 +33,6 @@ def insert_description(sentence, character, description):
     Returns:
         str: The modified sentence with the character's description if the character is present; otherwise, returns the original sentence.
     """
-
-    st.write("insert_description func-sentence:", sentence)
-    st.write("insert_description func-character:", character)
     character_lower = character.lower()
 
     # Use regex to find and replace the character's name with the name plus the description
@@ -63,7 +60,7 @@ def process_text(sentence, character_dict):
     try:
         # If character_dict is empty, return the original sentence
         if not character_dict:
-            print("Character descriptions are empty, returning the original sentence.")
+            # print("Character descriptions are empty, returning the original sentence.")
             return sentence
 
         # Start with the original sentence
@@ -73,7 +70,7 @@ def process_text(sentence, character_dict):
             # Insert description into the sentence where the character is mentioned
             modified_sentence = insert_description(modified_sentence, character, description)
 
-        print(f'modified_sentence: {modified_sentence}')
+        # print(f'modified_sentence: {modified_sentence}')
         return modified_sentence
 
     except Exception as e:
@@ -144,7 +141,7 @@ async def query_model(session, model_name, prompt, negative_prompt):
     async with session.post(api_url, headers=headers, json=payload) as response:
         response_content = await response.content.read()
         # For debugging: print response status
-        print(f"Response status: {response.status}")
+        # print(f"Response status: {response.status}")
         if response.status != 200:
             # If there's an error, print the content for debugging
             print(f"Error: {response_content}")

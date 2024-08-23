@@ -211,9 +211,9 @@ def generate_enhanced_text(sentences_list, progress_bar):
         # Loop through each sentence in the original list
         for sentence_info in sentences_list:
             paragraph_number, original_sentence, _ = sentence_info
-            print(
-                f"\nProcessing Paragraph {paragraph_number + 1}:\n{original_sentence}"
-            )
+            # print(
+            #     f"\nProcessing Paragraph {paragraph_number + 1}:\n{original_sentence}"
+            # )
             # Enhancement of sentences is currently disabled; using the original sentences
             # output = query(
             #     {
@@ -222,13 +222,13 @@ def generate_enhanced_text(sentences_list, progress_bar):
             #     }
             # )
             output = original_sentence
-            print("generate_enhanced_text-output:", output)
+            # print("generate_enhanced_text-output:", output)
             # Check if the response contains the expected information
             # Matching part is disabled
             # match = re.search(r'EndEnhancedText:(.*?)(?=\s*(?:text:|$))',
             #                   output[0]["generated_text"].replace("\n", " "), re.DOTALL)
             match = output
-            print(f'generate_enhanced_text - match:{match}')
+            # print(f'generate_enhanced_text - match:{match}')
             if match:
                 # Enhancement extraction is disabled; using the match directly
                 # enhanced_text = match.group(1)
@@ -244,8 +244,8 @@ def generate_enhanced_text(sentences_list, progress_bar):
                 progress_percent = 55 + paragraph_number * (55 / len(sentences_list))
                 progress_value = min(int(progress_percent), 100)
                 progress_bar.progress(progress_value, text="תכף מסיימים!")  # Hebrew for "Almost done!"
-                print(f"Debug: Progress for Paragraph {paragraph_number + 1}: {progress_percent}%")
-                print("len(sentences_list):", len(sentences_list))
+                # print(f"Debug: Progress for Paragraph {paragraph_number + 1}: {progress_percent}%")
+                # print("len(sentences_list):", len(sentences_list))
             else:
                 # Handle the case where the match is not found
                 print(f"Error: Unable to extract enhanced text for the given sentence")
@@ -327,20 +327,20 @@ def generate_general_descriptions(characters, text, max_retries=2):
             output = query(payload)
             if isinstance(output, list) and len(output) > 0:
                 generated_text = output[0].get("generated_text", "No text generated")
-                print(f'generated_text: {generated_text}')
+                # print(f'generated_text: {generated_text}')
                 return extract_characteristics(generated_text)
             else:
-                print("No descriptions generated.")
+                # print("No descriptions generated.")
                 return {}
         except Exception as e:
-            print(f"Error during API query: {str(e)}")
+            # print(f"Error during API query: {str(e)}")
             return {}
 
     # Retry logic for generating descriptions
     character_descriptions = {}
     for character in characters:
         for attempt in range(max_retries):
-            print(f"Attempt {attempt + 1}: Generating description for: {character}")
+            # print(f"Attempt {attempt + 1}: Generating description for: {character}")
             new_description = query_and_extract(character, text)
             if new_description:
                 character_descriptions[character] = new_description
@@ -349,7 +349,7 @@ def generate_general_descriptions(characters, text, max_retries=2):
                 print(f"No description generated for {character} on attempt {attempt + 1}.")
 
     if not character_descriptions:
-        print("No descriptions were generated after all attempts.")
+        # print("No descriptions were generated after all attempts.")
         return {}
 
     return character_descriptions

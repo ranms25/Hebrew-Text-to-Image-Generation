@@ -1,9 +1,10 @@
 import streamlit as st
+from coreference_resolution import check_if_coreferences_across, resolve_coreferences_across_text
 from generate_and_enhanced_best_sentences import (
     generate_best_sentence,
     generate_enhanced_text,
     extract_main_characters,
-    generate_general_descriptions,
+    generate_general_descriptions
 )
 from google_translator import translate_text, align_hebrew_best_sentences
 from paragraphs_summary import paragraph_summary
@@ -429,7 +430,7 @@ def check_model_availability(model_names):
     - The first available model name. Returns None if no models are available.
     """
     for model_name in model_names:
-        print(f"Checking model availability: {model_name}")
+        # print(f"Checking model availability: {model_name}")
         api_url = f"https://api-inference.huggingface.co/models/{model_name}"
         headers = {
             "Authorization": f"Bearer {st.secrets.hf_credentials.header}"
@@ -439,10 +440,11 @@ def check_model_availability(model_names):
         }
         response = requests.post(api_url, headers=headers, json=payload)
         if response.status_code == 200:
+            # print(f"Model {model_name} ok model name: {model_name}")
             return model_name
         else:
             error_message = response.json().get("error", "")
-            print(f"Model {model_name} error: {error_message}")
+            # print(f"Model {model_name} error: {error_message}")
     return None
 
 
@@ -535,25 +537,34 @@ def main():
                 progress_bar = st.progress(0, text="איזה כיף! עוד כמה רגעים נתחיל בהצגת האיורים")
                 # Translate the input to English
                 user_input_english = translate_text(user_input_hebrew)
+                # st.write(user_input_english)
                 # st.success(f"Translated text: {user_input_english}")
                 progress_bar.progress(5, text="איזה כיף! עוד כמה רגעים נתחיל בהצגת האיורים")  # Update progress
                 # Extract main characters from the translated text
                 main_characters = extract_main_characters(user_input_english)
+                # st.write(main_characters)
                 progress_bar.progress(15, text="איזה כיף! עוד כמה רגעים נתחיל בהצגת האיורים")  # Update progress
                 # Display the main characters extracted using NLTK
                 # st.subheader("Main Characters:")
                 # st.write(main_characters)
+                resolved_summarized_paragraphs = check_if_coreferences_across(user_input_english, main_characters)
+                # st.write("resolved_summarized_paragraphs:", resolved_summarized_paragraphs)
+
                 # Segment the text into paragraphs
-                paragraphs = segment_text(user_input_english)
+                paragraphs = segment_text(resolved_summarized_paragraphs)
                 # st.write("paragraphs:", paragraphs)
                 # Summarize each paragraph
                 summarized_paragraphs = paragraph_summary(paragraphs)
                 # st.write("summarized_paragraphs:", summarized_paragraphs)
+
+                for par_numb in range(len(summarized_paragraphs)):
+                    summarized_paragraphs[par_numb] = resolve_coreferences_across_text(summarized_paragraphs[par_numb], main_characters)
+                # st.write("resolved_summarized_paragraphs:", resolved_summarized_paragraphs)
+
                 progress_bar.progress(35, text="איזה כיף! עוד כמה רגעים נתחיל בהצגת האיורים")  # Update progress
                 # Generate and enhance the best sentences
                 best_sentences = generate_best_sentence(summarized_paragraphs)
                 # st.write("best_sentences:", best_sentences)
-                #
                 hebrew_best_sentences_each_par = align_hebrew_best_sentences(best_sentences, user_input_hebrew)
                 # st.write("best_sentences:", best_sentences)
                 progress_bar.progress(55, text="איזה כיף! עוד כמה רגעים נתחיל בהצגת האיורים")  # Update progress
@@ -563,81 +574,75 @@ def main():
                         enhanced_text, sentence_mapping = generate_enhanced_text(best_sentences, progress_bar)
                         if enhanced_text is not None:
                             # Display the enhanced text
-                            # st.subheader("Enhanced Text:")
+                            st.subheader("Enhanced Text:")
                             # st.write(enhanced_text)
                             # st.write("")
                             # Generate general descriptions for the main characters
                             character_descriptions = generate_general_descriptions(main_characters,
                                                                                    summarized_paragraphs)
                             # print(f'character_descriptions: {character_descriptions}')
-                            if character_descriptions:
-                                progress_bar.progress(100)
-                                try:
-                                    # st.write("General Descriptions:", character_dict)
-                                    # Done button is now inside the main function
-                                    with st.form("image_selection_form"):
-                                        # Modify the following lines to use classes from the CSS file
-                                        st.markdown(
-                                            "<h3 class='subtitle'>איורים לבחירתך שיופיעו בסיפור</h3>",
-                                            unsafe_allow_html=True
-                                        )
-                                        st.markdown(
-                                            """
-                                            <style>
-                                            .instructions {
-                                                font-size: 18px;
-                                                direction: rtl;
-                                            }
-                                            .svg-emoji {
-                                                width: 1em;
-                                                height: 1em;
-                                                vertical-align: -0.1em;
-                                            }
-                                            </style>
-                                            <h5 class='instructions'>
-                                                להסרת איור לא רצוי הסירו את הסימן 
-                                                <svg class="svg-emoji" viewBox="0 0 24 24">
-                                                    <rect width="24" height="24" fill="#6a00ff"/>
-                                                    <path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z" fill="white"/>
-                                                </svg>
-                                            </h5>
-                                            """,
-                                            unsafe_allow_html=True
-                                        )
-                                        # Call the show_enhanced_images function here
-                                        model_names = [
-                                            # "diffusers/stable-diffusion-xl-1.0-inpainting-0.1"
-                                            "stabilityai/stable-diffusion-xl-base-1.0",
-                                            "runwayml/stable-diffusion-v1-5",
-                                            "cagliostrolab/animagine-xl-3.1"
-                                        ]
-                                        model_name = check_model_availability(model_names)
-                                        print(f'model_name: {model_name}')
-                                        with st.spinner("עוד כמה רגעים והאיור יופיע"):
-                                            show_enhanced_images(model_name, best_sentences, sentence_mapping,
-                                                                 character_descriptions,
-                                                                 selected_style, hebrew_best_sentences_each_par)
-                                        # Allow users to select images before clicking "Done"
-                                        st.form_submit_button("לאחר סיום הבחירה לחצו כאן להמשך",
-                                                              on_click=on_done_button_click,
-                                                              args=(user_input_hebrew, hebrew_best_sentences_each_par,
-                                                                    title_of_story, author_name))
-                                except Exception as e:
-                                    error_message = (
-                                        f"An error occurred during text enhancement: {str(e)}"
+                            try:
+                                # st.write("General Descriptions:", character_dict)
+                                # Done button is now inside the main function
+                                with st.form("image_selection_form"):
+                                    # Modify the following lines to use classes from the CSS file
+                                    st.markdown(
+                                        "<h3 class='subtitle'>איורים לבחירתך שיופיעו בסיפור</h3>",
+                                        unsafe_allow_html=True
                                     )
-                                    # print(error_message)
-                                    st.subheader("אוי נתקלנו בבעיה בטעינת המודל המרוחק")
-                                    st.error("ממליצים לנסות שוב בעוד מספר רגעים")
-                            else:
-                                # print("General Descriptions is empty.")
+                                    st.markdown(
+                                        """
+                                        <style>
+                                        .instructions {
+                                            font-size: 18px;
+                                            direction: rtl;
+                                        }
+                                        .svg-emoji {
+                                            width: 1em;
+                                            height: 1em;
+                                            vertical-align: -0.1em;
+                                        }
+                                        </style>
+                                        <h5 class='instructions'>
+                                            להסרת איור לא רצוי הסירו את הסימן 
+                                            <svg class="svg-emoji" viewBox="0 0 24 24">
+                                                <rect width="24" height="24" fill="#6a00ff"/>
+                                                <path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z" fill="white"/>
+                                            </svg>
+                                        </h5>
+                                        """,
+                                        unsafe_allow_html=True
+                                    )
+                                    # Call the show_enhanced_images function here
+                                    model_names = [
+                                        # "diffusers/stable-diffusion-xl-1.0-inpainting-0.1"
+                                        "stabilityai/stable-diffusion-xl-base-1.0",
+                                        "runwayml/stable-diffusion-v1-5",
+                                        "black-forest-labs/FLUX.1-dev"
+                                    ]
+                                    model_name = check_model_availability(model_names)
+                                    # print(f'model_name: {model_name}')
+                                    with st.spinner("עוד כמה רגעים והאיור יופיע"):
+                                        show_enhanced_images(model_name, best_sentences, sentence_mapping,
+                                                             character_descriptions,
+                                                             selected_style, hebrew_best_sentences_each_par)
+                                    # Allow users to select images before clicking "Done"
+                                    st.form_submit_button("לאחר סיום הבחירה לחצו כאן להמשך",
+                                                          on_click=on_done_button_click,
+                                                          args=(user_input_hebrew, hebrew_best_sentences_each_par,
+                                                                title_of_story, author_name))
+                            except Exception as e:
+                                error_message = (
+                                    f"An error occurred during text enhancement: {str(e)}"
+                                )
+                                # st.write(error_message)
                                 st.subheader("אוי נתקלנו בבעיה בטעינת המודל המרוחק")
                                 st.error("ממליצים לנסות שוב בעוד מספר רגעים")
                     except Exception as e:
                         error_message = (
                             f"An error occurred during text enhancement: {str(e)}"
                         )
-                        # print(error_message)
+                        # st.write(error_message)
                         st.subheader("אוי נתקלנו בבעיה בטעינת המודל המרוחק")
                         st.error("ממליצים לנסות שוב בעוד מספר רגעים")
                 else:
@@ -650,7 +655,7 @@ def main():
                     st.subheader("נתקלנו בבעיה")
                     st.error("אוי! הטקסט חורג מהמגבלה של 3280 תווים, ממליצים להריץ שוב בחלקים נפרדים לפי המגבלה")
                 else:
-                    # print(error_message)
+                    # st.write(error_message)
                     st.subheader("נתקלנו בבעיה")
                     st.error("אופס, נראה ששכחתם את הסיפור! אנא כתבו אותו כאן ונסו שוב.")
 
