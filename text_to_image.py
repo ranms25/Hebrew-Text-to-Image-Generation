@@ -23,52 +23,62 @@ import streamlit as st
 
 def insert_description(sentence, character, description):
     """
-    Integrates the character and its description at the beginning of the sentence if the character is mentioned.
+    Integrates the character, its type, and its description within the sentence right after the character's name is mentioned.
 
     Parameters:
         - sentence (str): The original sentence where the description is to be inserted.
         - character (str): The character whose description is to be added.
-        - description (str): The descriptive text to be inserted.
+        - description (dict): The dictionary containing the character's type and descriptive words.
 
     Returns:
         str: The modified sentence with the character's description if the character is present; otherwise, returns the original sentence.
     """
-    # Convert character name to lowercase for case-insensitive matching
-    character = character.lower()
-    # Clean the description by removing any text after a newline character
-    cleaned_description = re.sub(r'\n.*', '', description)
-    # Further clean the description by removing non-alphabetic characters and quotes
-    cleaned_description = re.sub(r'[^a-zA-Z\s,]', '', cleaned_description).replace("'", '').replace('"', '')
-    # Check if the character is mentioned in the sentence
-    if character in sentence.lower():
-        # Insert the character and its cleaned description at the beginning of the sentence
-        modified_sentence = f"{character}: {cleaned_description.strip()}. {sentence}"
-        return modified_sentence
-    else:
-        # If the character isn't mentioned, return the sentence unchanged
-        return sentence
+
+    st.write("insert_description func-sentence:", sentence)
+    st.write("insert_description func-character:", character)
+    character_lower = character.lower()
+
+    # Use regex to find and replace the character's name with the name plus the description
+    modified_sentence = re.sub(
+        fr"\b{character}\b",
+        fr"{character.capitalize()}{description}",
+        sentence,
+        flags=re.IGNORECASE
+    )
+    return modified_sentence
 
 
 def process_text(sentence, character_dict):
     """
     Enhances the given sentence by incorporating descriptions for each mentioned character.
+    Falls back to the original sentence if `character_dict` is empty.
 
     Parameters:
         - sentence (str): The original sentence to be processed.
         - character_dict (dict): A dictionary mapping characters to their respective descriptions.
 
     Returns:
-        str: The sentence modified to include character descriptions where applicable.
+        str: The sentence modified to include character descriptions where applicable, or the original sentence.
     """
-    # Start with the original sentence
-    modified_sentence = sentence
+    try:
+        # If character_dict is empty, return the original sentence
+        if not character_dict:
+            print("Character descriptions are empty, returning the original sentence.")
+            return sentence
 
-    # Iterate through each character and their descriptions
-    for character, descriptions in character_dict.items():
-        for description in descriptions:
-            # Update the sentence with the character's description if the character is present
+        # Start with the original sentence
+        modified_sentence = sentence
+
+        for character, description in character_dict.items():
+            # Insert description into the sentence where the character is mentioned
             modified_sentence = insert_description(modified_sentence, character, description)
-    return modified_sentence
+
+        print(f'modified_sentence: {modified_sentence}')
+        return modified_sentence
+
+    except Exception as e:
+        print(f"Error processing text: {e}. Returning original sentence.")
+        return sentence
 
 
 def generate_prompt(text, sentence_mapping, character_dict, selected_style):
@@ -86,18 +96,20 @@ def generate_prompt(text, sentence_mapping, character_dict, selected_style):
     """
     # Retrieve the enhanced version of the sentence; if not found, use the original
     enhanced_sentence = sentence_mapping.get(text, text)
+    # st.write("generate_prompt fucntion enhanced_sentence:", enhanced_sentence)
     # Process the text to incorporate character descriptions
     image_descriptions = process_text(enhanced_sentence, character_dict)
+    # st.write(f"generate_prompt fucntion image_descriptions:", image_descriptions)
     # Construct the prompt with the desired art style
-    prompt = f"Make an illustration in {selected_style} style from: {image_descriptions}"
+    prompt = f"Create an illustration in {selected_style} style from: {image_descriptions}"
     # Define aspects to be avoided in the generated image
     negative_prompt = (
         "lowres, bad anatomy, bad hands, text, chat box, words, error, missing fingers, extra digit, "
         "fewer digits, cropped, worst quality, low quality, normal quality, jpeg artifacts, signature, "
-        "watermark, username, blurry "
+        "watermark, username, blurry,distorted "
     )
     # For debugging: print the generated prompt
-    # print(f"Generated prompt: {prompt}")
+    # st.write(f"generate_prompt func-Generated prompt: {prompt}")
     return prompt, negative_prompt
 
 
