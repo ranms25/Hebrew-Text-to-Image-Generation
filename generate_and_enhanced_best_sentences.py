@@ -92,7 +92,6 @@ def query(payload):
 
     Parameters:
         - payload (dict): The payload to be sent in the API request.
-        - characters (list): Optional. List of characters to include in the payload.
 
     Returns:
         dict: The JSON response from the API.
@@ -108,8 +107,8 @@ def generate_best_sentence(paragraphs_summary):
     Parameters:
         - paragraphs_summary (list): List of summarized paragraphs.
 
-    Returns: list: List of tuples containing the paragraph number, best sentence, its score, and the index of the
-    selected sentence.
+    Returns:
+        list: List of tuples containing the paragraph number, best sentence, its score, and the index of the selected sentence.
     """
     # List to store the best sentences along with their paragraph numbers and scores
     best_sentences = []
@@ -268,6 +267,15 @@ def generate_enhanced_text(sentences_list, progress_bar):
 
 
 def extract_characteristics(generated_text):
+    """
+    Extracts character descriptions from the generated text based on a specific pattern.
+
+    Parameters:
+        - generated_text (str): The generated text containing character descriptions.
+
+    Returns:
+        list: List of extracted character descriptions, or None if not found.
+    """
     # Find all occurrences of "Generate the description here below:"
     pattern = r"Generate the description here below:\s*['\"]?([^'\"]+)"
     matches = re.findall(pattern, generated_text, re.DOTALL)
@@ -279,6 +287,17 @@ def extract_characteristics(generated_text):
 
 
 def generate_general_descriptions(characters, text, max_retries=2):
+    """
+    Generates general descriptions for a list of characters based on their context within the provided text.
+
+    Parameters:
+        - characters (list): List of character names to generate descriptions for.
+        - text (str): The context text that may influence the character descriptions.
+        - max_retries (int): Maximum number of attempts to generate a description for each character.
+
+    Returns:
+        dict: A dictionary mapping each character to its generated description.
+    """
     def query_and_extract(character, context_text):
         try:
             # Directly format the prompt for a single character with context

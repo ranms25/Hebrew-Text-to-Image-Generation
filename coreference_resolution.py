@@ -36,9 +36,9 @@ def extract_core_name(mention_text, main_characters):
     words = mention_text.split()
     for character in main_characters:
         if character.lower() in mention_text.lower():
-            print(f"DEBUG: Main character '{character}' found in '{mention_text}'.")
+            # print(f"DEBUG: Main character '{character}' found in '{mention_text}'.")
             return character
-    print(f"DEBUG: Extracting core name from '{mention_text}' -> '{words[-1]}'")
+    # print(f"DEBUG: Extracting core name from '{mention_text}' -> '{words[-1]}'")
     return words[-1]
 
 
@@ -55,7 +55,7 @@ def calculate_pronoun_density(text):
     doc = nlp(text)
     pronoun_count = sum(1 for token in doc if token.pos_ == "PRON" and token.text in REPLACE_PRONOUNS)
     named_entity_count = sum(1 for ent in doc.ents if ent.label_ == "PERSON")
-    print(f"DEBUG: Pronoun count = {pronoun_count}, Named entity count = {named_entity_count}")
+    # print(f"DEBUG: Pronoun count = {pronoun_count}, Named entity count = {named_entity_count}")
     return pronoun_count / max(named_entity_count, 1), named_entity_count
 
 
@@ -72,7 +72,7 @@ def resolve_coreferences_across_text(text, main_characters):
     """
     # Process the text with the coreference model
     doc = nlp_coref(text)
-    print("DEBUG: Processing coreference resolution.")
+    # print("DEBUG: Processing coreference resolution.")
 
     # Create a mapping of coreference clusters
     coref_mapping = {}
@@ -80,7 +80,7 @@ def resolve_coreferences_across_text(text, main_characters):
         if re.match(r"coref_clusters_*", key):  # Ensure it's a coreference cluster
             main_mention = cluster[0]  # The first mention is considered the main reference
             core_name = extract_core_name(main_mention.text, main_characters)
-            print(f"DEBUG: Found cluster '{key}' with main mention '{main_mention.text}'. Core name: '{core_name}'")
+            # print(f"DEBUG: Found cluster '{key}' with main mention '{main_mention.text}'. Core name: '{core_name}'")
             if core_name in main_characters:  # Only map if the core name is in main characters
                 for mention in cluster:
                     for token in mention:
@@ -88,7 +88,7 @@ def resolve_coreferences_across_text(text, main_characters):
                             # Handle case sensitivity
                             core_name_final = core_name if token.text.istitle() else core_name.lower()
                             coref_mapping[token.i] = core_name_final
-                            print(f"DEBUG: Mapping token '{token.text}' at index {token.i} to '{core_name_final}'.")
+                            # print(f"DEBUG: Mapping token '{token.text}' at index {token.i} to '{core_name_final}'.")
 
     # Reconstruct the text with resolved coreferences
     resolved_tokens = []
@@ -108,7 +108,7 @@ def resolve_coreferences_across_text(text, main_characters):
                                                                                           current_sentence]:
                 current_sentence.append(core_name)
                 current_sentence_characters.add(core_name)
-                print(f"DEBUG: Replaced '{token.text}' with '{core_name}' at token index {i}.")
+                # print(f"DEBUG: Replaced '{token.text}' with '{core_name}' at token index {i}.")
             else:
                 # print(f"DEBUG: Skipping replacement of '{token.text}' with '{core_name}' as it already exists in the sentence.")
                 current_sentence.append(token.text)
@@ -123,7 +123,7 @@ def resolve_coreferences_across_text(text, main_characters):
 
     # Remove consecutive duplicate phrases
     resolved_text = remove_consecutive_duplicate_phrases(resolved_text)
-    print(f"DEBUG: Final resolved text: {resolved_text}")
+    # print(f"DEBUG: Final resolved text: {resolved_text}")
     return resolved_text
 
 
@@ -163,11 +163,11 @@ def check_if_coreferences_across(text, main_characters):
     """
     pronoun_density, named_entity_count = calculate_pronoun_density(text)
     min_named_entities = len(main_characters)  # Set min_named_entities to the length of main characters
-    print(f"DEBUG: Pronoun density: {pronoun_density}, Named entity count: {named_entity_count}")
+    # print(f"DEBUG: Pronoun density: {pronoun_density}, Named entity count: {named_entity_count}")
 
     if pronoun_density > 0:
-        print("Applying coreference resolution due to pronoun density.")
+        # print("Applying coreference resolution due to pronoun density.")
         return resolve_coreferences_across_text(text, main_characters)
     else:
-        print("Skipping coreference resolution. Text is clear enough.")
+        # print("Skipping coreference resolution. Text is clear enough.")
         return text
