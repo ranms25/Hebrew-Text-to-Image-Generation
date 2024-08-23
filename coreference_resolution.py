@@ -1,3 +1,16 @@
+"""
+coreference_resolution.py
+
+This script is designed to perform coreference resolution on a given text, focusing on replacing specified pronouns
+with the corresponding character names or references. It leverages spaCy's advanced coreference model, along with a
+pronoun density calculation to determine when coreference resolution is necessary. The script includes functions
+for extracting core names, calculating pronoun density, resolving coreferences, and cleaning up redundant phrases
+in the processed text.
+
+Author: Ran Moshe
+Date: August 23, 2024
+"""
+
 import spacy
 import re
 
@@ -10,7 +23,16 @@ REPLACE_PRONOUNS = {"he", "she", "they", "He", "She", "They"}
 
 
 def extract_core_name(mention_text, main_characters):
-    """Extracts the core name from the mention text with priority to main characters."""
+    """
+    Extracts the core name from the mention text with priority to main characters.
+
+    Parameters:
+    mention_text (str): The text where the mention is found.
+    main_characters (list): A list of main character names to prioritize.
+
+    Returns:
+    str: The core name extracted, prioritizing names from main_characters.
+    """
     words = mention_text.split()
     for character in main_characters:
         if character.lower() in mention_text.lower():
@@ -21,7 +43,15 @@ def extract_core_name(mention_text, main_characters):
 
 
 def calculate_pronoun_density(text):
-    """Calculates the density of pronouns in the text."""
+    """
+    Calculates the density of pronouns in the text relative to named entities.
+
+    Parameters:
+    text (str): The input text to evaluate.
+
+    Returns:
+    tuple: A tuple containing the pronoun density and the count of named entities.
+    """
     doc = nlp(text)
     pronoun_count = sum(1 for token in doc if token.pos_ == "PRON" and token.text in REPLACE_PRONOUNS)
     named_entity_count = sum(1 for ent in doc.ents if ent.label_ == "PERSON")
@@ -30,6 +60,16 @@ def calculate_pronoun_density(text):
 
 
 def resolve_coreferences_across_text(text, main_characters):
+    """
+    Resolves coreferences across the text by mapping specified pronouns to their corresponding core names.
+
+    Parameters:
+    text (str): The input text to resolve coreferences in.
+    main_characters (list): A list of main character names to use for mapping pronouns.
+
+    Returns:
+    str: The text with coreferences resolved.
+    """
     # Process the text with the coreference model
     doc = nlp_coref(text)
     print("DEBUG: Processing coreference resolution.")
@@ -70,8 +110,7 @@ def resolve_coreferences_across_text(text, main_characters):
                 current_sentence_characters.add(core_name)
                 print(f"DEBUG: Replaced '{token.text}' with '{core_name}' at token index {i}.")
             else:
-                print(
-                    f"DEBUG: Skipping replacement of '{token.text}' with '{core_name}' as it already exists in the sentence.")
+                # print(f"DEBUG: Skipping replacement of '{token.text}' with '{core_name}' as it already exists in the sentence.")
                 current_sentence.append(token.text)
         else:
             current_sentence.append(token.text)
@@ -89,6 +128,15 @@ def resolve_coreferences_across_text(text, main_characters):
 
 
 def remove_consecutive_duplicate_phrases(text):
+    """
+    Removes consecutive duplicate phrases from the text to ensure clarity.
+
+    Parameters:
+    text (str): The input text to clean.
+
+    Returns:
+    str: The cleaned text with consecutive duplicates removed.
+    """
     words = text.split()
     i = 0
     while i < len(words) - 1:
@@ -103,7 +151,16 @@ def remove_consecutive_duplicate_phrases(text):
 
 
 def check_if_coreferences_across(text, main_characters):
-    """Determines whether to apply coreference resolution based on pronoun density and named entity count."""
+    """
+    Determines whether to apply coreference resolution based on pronoun density and named entity count.
+
+    Parameters:
+    text (str): The input text to evaluate.
+    main_characters (list): A list of main character names to consider.
+
+    Returns:
+    str: The text after optionally applying coreference resolution.
+    """
     pronoun_density, named_entity_count = calculate_pronoun_density(text)
     min_named_entities = len(main_characters)  # Set min_named_entities to the length of main characters
     print(f"DEBUG: Pronoun density: {pronoun_density}, Named entity count: {named_entity_count}")
@@ -114,4 +171,3 @@ def check_if_coreferences_across(text, main_characters):
     else:
         print("Skipping coreference resolution. Text is clear enough.")
         return text
-
