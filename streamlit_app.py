@@ -193,6 +193,19 @@ def create_html_content(content, title_of_story, author_name, only_images=False)
     <head>
     <style>
     {css}
+    '''
+
+    if only_images:
+        # Apply margin only if generating the images-only PDF
+        html_content += '''
+        .image-spacing {
+            margin-bottom: 20px;  /* Adjust the margin value as needed */
+            display: block;
+            width: 100%;  /* Make images full width */
+        }
+        '''
+
+    html_content += '''
     </style>
     </head>
     <body class="pdf-body">
@@ -207,7 +220,11 @@ def create_html_content(content, title_of_story, author_name, only_images=False)
             if not only_images:
                 html_content += f'<p class="hebrew-text-pdf">{item}</p>'
         else:  # Odd indices contain images
-            img_tag = f'<img src="data:image/png;base64,{item}" alt="Image {i // 2}" class="resized-image-pdf">'
+            # Apply the spacing class only if generating the images-only PDF
+            if only_images:
+                img_tag = f'<div class="image-spacing"><img src="data:image/png;base64,{item}" alt="Image {i // 2}" class="resized-image-pdf"></div>'
+            else:
+                img_tag = f'<img src="data:image/png;base64,{item}" alt="Image {i // 2}" class="resized-image-pdf">'
             html_content += f'{img_tag}'
 
     html_content += '</div></body></html>'
@@ -520,7 +537,7 @@ def main():
             "ציור בצבעי מים": "watercolor painting",
             "שחור ולבן": "black and white",
             "אימפרסיוניזם": "impressionism",
-            "מצויר": "cartoon",
+            "מצויר": "whimsical ",
             "רֵיאָלִיזם": "realism",
             "פַּסטֵל": "pastel",
         }
@@ -543,7 +560,7 @@ def main():
                 progress_bar.progress(5, text="איזה כיף! עוד כמה רגעים נתחיל בהצגת האיורים")  # Update progress
                 # Extract main characters from the translated text
                 main_characters = extract_main_characters(user_input_english)
-                st.write(main_characters)
+                # st.write(main_characters)
                 progress_bar.progress(15, text="איזה כיף! עוד כמה רגעים נתחיל בהצגת האיורים")  # Update progress
                 # Display the main characters extracted using NLTK
                 # st.subheader("Main Characters:")
@@ -667,7 +684,7 @@ def main():
                 else:
                     # st.write(error_message)
                     st.subheader("נתקלנו בבעיה")
-                    st.error("אופס, נראה ששכחתם את הסיפור! אנא כתבו אותו כאן ונסו שוב.")
+                    st.error("אופס, נראה ששכחתם את הסיפור! אנא כתבו אותו בתיבה למעלה ונסו שוב.")
 
 
 if __name__ == "__main__":

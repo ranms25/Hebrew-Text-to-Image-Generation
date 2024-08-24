@@ -11,6 +11,7 @@ This repository contains a comprehensive set of scripts designed for the automat
 
 This script serves as the main application for the project. It utilizes multiple functionalities to enhance and visualize textual content in Hebrew, including translation, summarization, text segmentation, and text-to-image generation. The script is built using the Streamlit framework to create an interactive web application. Key features include:
 - **Translation:** Converts Hebrew text to English for processing.
+- **Coreference resolution :** Focusing on replacing specified pronouns with the corresponding character names or references. It leverages spaCy's advanced coreference Usint external Docker Space of HF.
 - **Summarization:** Summarizes paragraphs to extract the most relevant content.
 - **Text Segmentation:** Breaks down text into paragraphs using NLP techniques.
 - **Image Generation:** Generates illustrations based on text using models from Hugging Face's API.
