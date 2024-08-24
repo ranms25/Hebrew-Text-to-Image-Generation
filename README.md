@@ -9,11 +9,12 @@ This repository contains a comprehensive set of scripts designed for the automat
 **Author:** Ran Moshe  
 **Date:** December 28, 2023
 
-This script serves as the main application for the project. It utilizes multiple functionalities to enhance and visualize textual content in Hebrew, including translation, summarization, text segmentation, and text-to-image generation. The script is built using the Streamlit framework to create an interactive web application. Key features include:
+This script serves as the main application for the project. It utilizes multiple functionalities to process Hebrew text, including translation, summarization, text segmentation, and text-to-image generation. The script is built using the Streamlit framework to create an interactive web application. Key features include:
+
 - **Translation:** Converts Hebrew text to English for processing.
-- **Coreference resolution :** Focusing on replacing specified pronouns with the corresponding character names or references. It leverages spaCy's advanced coreference Usint external Docker Space of HF.
+- **Coreference Resolution:** Focuses on replacing specified pronouns with the corresponding character names or references. It leverages spaCy's advanced coreference using an external Docker Space of HF.
 - **Summarization:** Summarizes paragraphs to extract the most relevant content.
-- **Text Segmentation:** Breaks down text into paragraphs using NLP techniques.
+- **Text Segmentation:** Breaks down the text into paragraphs using NLP techniques.
 - **Image Generation:** Generates illustrations based on text using models from Hugging Face's API.
 
 ### 2. `generate_and_enhanced_best_sentences.py`
@@ -38,8 +39,9 @@ This script uses the Falconsai summarization pipeline and tokenizer to summarize
 **Date:** November 19, 2023
 
 Utilizing spaCy and Sentence Transformers, this script segments text into logical paragraphs. It employs natural language processing to:
-- **Identify Sentence Boundaries:** Detects where one sentence ends, and another begins.
-- **Determine Paragraph Breaks:** Uses pre-trained models to analyze sentence embeddings and determine the best points to divide text into paragraphs.
+
+- **Identify Sentence Boundaries:** Detects where one sentence ends and another begins.
+- **Determine Paragraph Breaks:** Uses pre-trained models to analyze sentence embeddings and determine the best points to divide the text into paragraphs.
 
 ### 5. `google_translator.py`
 
