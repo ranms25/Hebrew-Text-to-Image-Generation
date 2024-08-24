@@ -1,5 +1,4 @@
 import streamlit as st
-from coreference_resolution import check_if_coreferences_across, resolve_coreferences_across_text
 from generate_and_enhanced_best_sentences import (
     generate_best_sentence,
     generate_enhanced_text,
@@ -21,6 +20,8 @@ from PIL import Image
 import io
 from gradio_client import Client
 import requests
+
+API_URL_CORE = "https://ranm-coreferenceresolution.hf.space/predict"
 
 # Load the CSS file for custom styling
 with open('style.css', encoding='utf-8') as f:
@@ -542,24 +543,33 @@ def main():
                 progress_bar.progress(5, text="איזה כיף! עוד כמה רגעים נתחיל בהצגת האיורים")  # Update progress
                 # Extract main characters from the translated text
                 main_characters = extract_main_characters(user_input_english)
-                # st.write(main_characters)
+                st.write(main_characters)
                 progress_bar.progress(15, text="איזה כיף! עוד כמה רגעים נתחיל בהצגת האיורים")  # Update progress
                 # Display the main characters extracted using NLTK
                 # st.subheader("Main Characters:")
                 # st.write(main_characters)
-                resolved_summarized_paragraphs = check_if_coreferences_across(user_input_english, main_characters)
-                # st.write("resolved_summarized_paragraphs:", resolved_summarized_paragraphs)
+                resolved_text = requests.post(API_URL_CORE, json={"text": user_input_english, "main_characters": main_characters})
+                if resolved_text.status_code == 200:
+                    resolved_text = resolved_text.json().get("resolved_text")
+                else:
+                    resolved_text = user_input_english
+                # st.write("resolved_texts:", resolved_text)
 
                 # Segment the text into paragraphs
-                paragraphs = segment_text(resolved_summarized_paragraphs)
+                paragraphs = segment_text(resolved_text)
                 # st.write("paragraphs:", paragraphs)
                 # Summarize each paragraph
                 summarized_paragraphs = paragraph_summary(paragraphs)
                 # st.write("summarized_paragraphs:", summarized_paragraphs)
 
                 for par_numb in range(len(summarized_paragraphs)):
-                    summarized_paragraphs[par_numb] = resolve_coreferences_across_text(summarized_paragraphs[par_numb], main_characters)
-                # st.write("resolved_summarized_paragraphs:", resolved_summarized_paragraphs)
+                    resolved_summarized_paragraph = requests.post(API_URL_CORE, json={"text": summarized_paragraphs[par_numb], "main_characters": main_characters})
+                    if resolved_summarized_paragraph.status_code == 200:
+                        resolved_summarized_paragraph = resolved_summarized_paragraph.json().get("resolved_text")
+                    else:
+                        resolved_summarized_paragraph = summarized_paragraphs[par_numb]
+                    summarized_paragraphs[par_numb] = resolved_summarized_paragraph
+                # st.write("summarized_paragraphs:", summarized_paragraphs)
 
                 progress_bar.progress(35, text="איזה כיף! עוד כמה רגעים נתחיל בהצגת האיורים")  # Update progress
                 # Generate and enhance the best sentences
@@ -574,7 +584,7 @@ def main():
                         enhanced_text, sentence_mapping = generate_enhanced_text(best_sentences, progress_bar)
                         if enhanced_text is not None:
                             # Display the enhanced text
-                            st.subheader("Enhanced Text:")
+                            # st.subheader("Enhanced Text:")
                             # st.write(enhanced_text)
                             # st.write("")
                             # Generate general descriptions for the main characters

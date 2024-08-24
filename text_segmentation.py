@@ -11,7 +11,7 @@ Date: November 19, 2023
 import numpy as np
 import spacy
 from sentence_transformers import SentenceTransformer, util
-import streamlit as st
+
 
 # Load the English language model from spaCy
 nlp = spacy.load("en_core_web_sm")

@@ -19,11 +19,9 @@ import re
 import nltk
 from collections import Counter
 import streamlit as st
-
+from text_segmentation import nlp
 nltk.download("punkt")  # Download the Punkt sentence tokenizer
 
-# Load spaCy English model for linguistic processing
-nlp = spacy.load("en_core_web_sm")
 
 # Load BERT-based model specifically trained for part-of-speech tagging
 model_name_ner = "QCRI/bert-base-multilingual-cased-pos-english"
