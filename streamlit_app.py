@@ -607,6 +607,7 @@ def main():
                             # Generate general descriptions for the main characters
                             character_descriptions = generate_general_descriptions(main_characters,
                                                                                    summarized_paragraphs)
+                            progress_bar.progress(100, text="תכף מסיימים!")
                             # print(f'character_descriptions: {character_descriptions}')
                             try:
                                 # st.write("General Descriptions:", character_dict)
@@ -647,9 +648,9 @@ def main():
                                         "runwayml/stable-diffusion-v1-5",
                                         "black-forest-labs/FLUX.1-dev"
                                     ]
-                                    model_name = check_model_availability(model_names)
-                                    # print(f'model_name: {model_name}')
                                     with st.spinner("עוד כמה רגעים והאיור יופיע"):
+                                        model_name = check_model_availability(model_names)
+                                        # print(f'model_name: {model_name}')
                                         show_enhanced_images(model_name, best_sentences, sentence_mapping,
                                                              character_descriptions,
                                                              selected_style, hebrew_best_sentences_each_par)
