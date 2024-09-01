@@ -300,8 +300,8 @@ def generate_general_descriptions(characters, text, max_retries=2):
         try:
             # Directly format the prompt for a single character with context
             prompt = (
-                f"Describe the physical appearance of '{character}' in simple terms that are easy to draw. Focus on "
-                f"features like size (e.g., small), height (e.g., tall), shape (e.g., broad), form (e.g., muscular), "
+                f"Describe the physical appearance of '{character}' in simple terms that are easy to draw for children's storybook. "
+                f"Focus on features like size (e.g., small), height (e.g., tall), shape (e.g., broad), form (e.g., muscular), "
                 f"color (e.g., blue eyes), and texture (e.g., rough). "
                 f"The description must be limited to one sentence and include exactly four descriptive words, "
                 f"structured in the format: "
@@ -353,37 +353,93 @@ def generate_general_descriptions(characters, text, max_retries=2):
     return character_descriptions
 
 
-def extract_main_characters(sentence):
+def extract_main_characters(sentence, proper_noun_weight=0.3, boost_factor=1.2):
     """
     Extract main characters from a sentence based on proper nouns and nouns.
-
-    Parameters:
-        - sentence (str): The sentence to extract main characters from.
-
-    Returns:
-        list: List of main characters extracted from the sentence.
     """
-    # Tokenize the sentence using spaCy
     tokens = nlp(sentence)
+    words = []
+    original_words = []
+    full_names = []  # Store full names like 'Dr. Henry Jekyll'
+    i = 0
+    while i < len(tokens):
+        token = tokens[i]
+        if token.pos_ == "PROPN":
+            combined_name = token.text
 
-    # Extract proper nouns and nouns
-    words = [token.text.lower() for token in tokens if token.pos_ in ["PROPN", "NOUN"]]
+            # Combine with preceding titles
+            if i > 0 and tokens[i - 1].text in {"Mr.", "Mrs.", "Dr.", "Sir"}:
+                combined_name = tokens[i - 1].text + " " + combined_name
 
-    # Count occurrences of each word
+            # Combine with succeeding proper nouns
+            while i < len(tokens) - 1 and tokens[i + 1].pos_ == "PROPN":
+                combined_name += " " + tokens[i + 1].text
+                i += 1
+
+            # Handle "of" between proper nouns (e.g., "Queen of Hearts")
+            if i < len(tokens) - 2 and tokens[i + 1].text.lower() == "of" and tokens[i + 2].pos_ == "PROPN":
+                combined_name += " of " + tokens[i + 2].text
+                i += 2
+
+            words.extend([combined_name.lower()] * int(proper_noun_weight * 10))
+            original_words.append(combined_name)
+            full_names.append(combined_name.lower())  # Store the full name
+
+        elif token.pos_ == "NOUN":
+            words.append(token.text.lower())
+            original_words.append(token.text)
+
+        i += 1
+
     counts = Counter(words)
 
-    # Normalize by text length
-    total_words = len(words)
-    normalized_counts = {word: count / total_words for word, count in counts.items()}
+    boosted_counts = {word: count ** boost_factor for word, count in counts.items()}
 
-    # Set a dynamic threshold (e.g., top 3% of frequencies)
-    threshold_index = min(int(0.03 * total_words), len(normalized_counts) - 1)
-    threshold_value = sorted(normalized_counts.values(), reverse=True)[threshold_index]
+    total_words = sum(boosted_counts.values())
+    normalized_counts = {word: count / total_words for word, count in boosted_counts.items()}
 
-    # Filter out words below the threshold
+    # Adjust counts for shorter names that are part of full names
+    final_counts = {}
+    for word, count in normalized_counts.items():
+        matched = False
+        for full_name in full_names:
+            full_name_parts = full_name.split()
+            word_parts = word.split()
+
+            # Ensure all parts of the short name are within the full name
+            if all(part in full_name_parts for part in word_parts):
+                final_counts[full_name] = final_counts.get(full_name, 0) + count
+                matched = True
+                break
+
+        if not matched:
+            final_counts[word] = count
+
+    # Dynamic threshold based on the top 3% frequencies
+    threshold_index = min(int(0.03 * total_words), len(final_counts) - 1)
+    threshold_value = sorted(final_counts.values(), reverse=True)[threshold_index]
+
     main_characters = [
-        word for word, count in normalized_counts.items() if count >= threshold_value
+        word for word, count in final_counts.items() if count >= threshold_value
     ]
-    capitalized_characters = [character.capitalize() for character in main_characters]
-    # print(capitalized_characters)
+
+    # Sort main characters by their final counts and select top 6
+    sorted_main_characters = sorted(main_characters, key=lambda x: final_counts[x], reverse=True)[:6]
+
+    capitalized_characters = [
+        next((orig for orig in original_words if orig.lower() == character), character.capitalize())
+        for character in sorted_main_characters
+    ]
+
+    # Post-processing to combine related names
+    combined_characters = []
+    for char in capitalized_characters:
+        if any(existing in char or char in existing for existing in combined_characters):
+            continue
+        close_matches = [existing for existing in capitalized_characters if char in existing or existing in char]
+        best_match = max(close_matches, key=len)
+        combined_characters.append(best_match)
+
+    capitalized_characters = [character.capitalize() for character in combined_characters]
+    print(capitalized_characters)
     return capitalized_characters
