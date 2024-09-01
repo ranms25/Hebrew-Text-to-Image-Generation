@@ -537,7 +537,7 @@ def main():
             "ציור בצבעי מים": "watercolor painting",
             "שחור ולבן": "black and white",
             "אימפרסיוניזם": "impressionism",
-            "מצויר": "whimsical ",
+            "מצויר": "",
             "רֵיאָלִיזם": "realism",
             "פַּסטֵל": "pastel",
         }
@@ -631,7 +631,7 @@ def main():
                                         }
                                         </style>
                                         <h5 class='instructions'>
-                                            להסרת איור לא רצוי הסירו את הסימן 
+                                            להסרת איור לא רצוי הסירו את הסימן
                                             <svg class="svg-emoji" viewBox="0 0 24 24">
                                                 <rect width="24" height="24" fill="#6a00ff"/>
                                                 <path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z" fill="white"/>
