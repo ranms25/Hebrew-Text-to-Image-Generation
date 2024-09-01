@@ -98,12 +98,15 @@ def generate_prompt(text, sentence_mapping, character_dict, selected_style):
     image_descriptions = process_text(enhanced_sentence, character_dict)
     # st.write(f"generate_prompt fucntion image_descriptions:", image_descriptions)
     # Construct the prompt with the desired art style
-    prompt = f"Create an illustration in {selected_style} style from: {image_descriptions}"
-    # Define aspects to be avoided in the generated image
+    prompt = f"Create a whimsical {selected_style} illustration ideal for a children's book page, from: {image_descriptions}."
+
+    # Define aspects to be avoided in the generated imagewatermark
     negative_prompt = (
         "lowres, bad anatomy, bad hands, text, chat box, words, error, missing fingers, extra digit, "
         "fewer digits, cropped, worst quality, low quality, normal quality, jpeg artifacts, signature, "
-        "watermark, username, blurry,distorted "
+        "watermark,logo,banner, username, blurry,bad proportions, deformed, disconnected limbs, disfigured, "
+        "extra arms, extra limbs, extra hands, fused fingers, gross proportions, long neck, malformed limbs, mutated, "
+        "mutated hands, mutated limbs, missing arms, missing fingers, poorly drawn hands, poorly drawn face. "
     )
     # For debugging: print the generated prompt
     # st.write(f"generate_prompt func-Generated prompt: {prompt}")
