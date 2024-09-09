@@ -53,55 +53,77 @@ def translate_to_hebrew(sentences):
     return translations
 
 
-def find_most_similar_hebrew(original_text, translated_sentence):
+def precompute_hebrew_embeddings(original_text):
     """
-    Finds the most semantically similar Hebrew sentence in the original text to the given translated sentence.
+    Precompute the embeddings for all Hebrew sentences in the original text using batch processing.
 
     Parameters:
         - original_text (str): The original Hebrew text.
-        - translated_sentence (str): The sentence to compare against.
 
     Returns:
-        tuple: The most similar Hebrew sentence and its end index in the original text.
+        dict: A dictionary mapping each sentence to its precomputed embedding.
+    """
+    sentences = [sentence.strip() for sentence in original_text.split('.') if sentence.strip()]
+    embeddings = model.encode(sentences, convert_to_tensor=True)  # Batch processing for efficiency
+    return dict(zip(sentences, embeddings))
+
+
+def find_most_similar_hebrew(precomputed_embeddings, translated_sentence, matched_sentences):
+    """
+    Finds the most semantically similar Hebrew sentence using precomputed embeddings.
+
+    Parameters:
+        - precomputed_embeddings (dict): A dictionary of precomputed embeddings for Hebrew sentences.
+        - translated_sentence (str): The translated sentence to match.
+        - matched_sentences (set): A set of already matched sentences to avoid duplicates.
+
+    Returns:
+        tuple: The most similar Hebrew sentence and its index in the original text.
     """
     max_similarity = 0
     most_similar_sentence = None
+    end_index = -1
 
-    for sentence in original_text.split('.'):
-        if not sentence.strip():
+    # Compute the embedding for the translated sentence
+    translated_embedding = model.encode(translated_sentence, convert_to_tensor=True).numpy().reshape(1, -1)
+    for sentence, embedding in precomputed_embeddings.items():
+        if sentence in matched_sentences:
             continue
-
-        # Compute embeddings for both sentences
-        sentence_embedding = model.encode(sentence, convert_to_tensor=True).numpy().reshape(1, -1)
-        translated_embedding = model.encode(translated_sentence, convert_to_tensor=True).numpy().reshape(1, -1)
-
         # Calculate cosine similarity
-        similarity = cosine_similarity(sentence_embedding, translated_embedding).item()
-
+        similarity = cosine_similarity(embedding.reshape(1, -1), translated_embedding).item()
+        # Debugging: Concise similarity check
+        # st.write(f"Hebrew: {sentence[:30]}... | Similarity: {similarity:.3f}")
         if similarity > max_similarity:
             max_similarity = similarity
-            most_similar_sentence = sentence.strip()
-            end_index = original_text.find(sentence) + len(sentence)  # Update end index
-
+            most_similar_sentence = sentence
+            end_index = sentence
+    # st.write(f"Best match: {most_similar_sentence[:30]}... | Score: {max_similarity:.3f}")
     return most_similar_sentence, end_index
 
 
 def align_hebrew_best_sentences(best_sentences, hebrew_base_text):
     """
-    Aligns the best sentences identified in English with their corresponding Hebrew sentences.
+    Aligns the best sentences identified in English with their corresponding Hebrew sentences,
+    ensuring each Hebrew sentence is aligned only once.
 
     Parameters:
-        - best_sentences (list): List of best sentences identified in English.
+        - best_sentences (list): A list of best sentences identified in English.
         - hebrew_base_text (str): The original Hebrew text.
 
     Returns:
-        list: List of tuples containing the most similar Hebrew sentence and its index in the original text.
+        list: A list of tuples containing the most similar Hebrew sentence and its index in the original text.
     """
+    # Precompute embeddings for all Hebrew sentences
+    precomputed_embeddings = precompute_hebrew_embeddings(hebrew_base_text)
+    matched_sentences = set()  # Track already aligned sentences
     alignment_hebrew_best_sentences = []
     for idx, sentence_info in enumerate(best_sentences):
         # Translate the sentence back to Hebrew
         translated_sentence = translate_to_hebrew([sentence_info])[0]
-        # Find the most similar Hebrew sentence in the original text
-        most_similar_hebrew, index = find_most_similar_hebrew(hebrew_base_text, translated_sentence)
+        # st.write(f"Aligning English sentence: {sentence_info[1][:30]}...")
+        # Find the most similar Hebrew sentence excluding already matched sentences
+        most_similar_hebrew, index = find_most_similar_hebrew(precomputed_embeddings, translated_sentence, matched_sentences)
+        if most_similar_hebrew:
+            matched_sentences.add(most_similar_hebrew)  # Avoid duplicates
         alignment_hebrew_best_sentences.append((most_similar_hebrew, index))
     return alignment_hebrew_best_sentences

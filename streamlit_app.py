@@ -91,8 +91,8 @@ def toggle_page(content="", show=True):
 
 def on_done_button_click(hebrew_text, hebrew_best_sentences_each_par, title_of_story, author_name):
     """
-    Function to handle the 'Done' button click, which processes the selected images and
-    generates a downloadable PDF file with the story and images.
+    Function to handle the 'Done' button click, process the selected images,
+    and generate a downloadable PDF with the story and images.
 
     Parameters:
     - hebrew_text: The original Hebrew text of the story.
@@ -109,38 +109,54 @@ def on_done_button_click(hebrew_text, hebrew_best_sentences_each_par, title_of_s
             image_info[0] is None for image_info in st.session_state.selected_images):
         return
 
-    # Filter selected images
-    selected_images = [image_info for i, image_info in enumerate(st.session_state.selected_images) if
-                       st.session_state[f"checkbox_{i}"]]
-    st.session_state.selected_images = selected_images
+    # Ensure the `selected_images` list is the same length as paragraphs
+    consistent_images = []
+    for i, image_info in enumerate(st.session_state.selected_images):
+        if st.session_state[f"checkbox_{i}"]:
+            consistent_images.append(image_info)
+        else:
+            consistent_images.append(None)  # Placeholder for paragraphs without selected images
 
-    # Create a list to store content (text and images) for the PDF
+    # Update session state to store the consistent list of images
+    st.session_state.selected_images = consistent_images
+
+    # Create a list to store the content (text + images) for the PDF
     downloadable_content = []
     index_start_hebrew_text = 0
 
     # Wrap results in an expander, allowing users to collapse/expand the section
     with st.expander("", expanded=True):
         for i, image_info in enumerate(st.session_state.selected_images):
-            image_bytes, selected = image_info
-            if selected:
-                # Calculate the end index for the current paragraph
-                end_index = hebrew_best_sentences_each_par[i][1] + 1
+            # Get the corresponding sentence from the paragraph mapping
+            sentence = hebrew_best_sentences_each_par[i][1]
 
-                # Add the corresponding Hebrew text to the content list
-                downloadable_content.append(hebrew_text[index_start_hebrew_text:end_index])
-                st.markdown(f'<p class="hebrew-text">{hebrew_text[index_start_hebrew_text:end_index]}</p>',
-                            unsafe_allow_html=True)
+            # Find the end index of the current paragraph
+            end_index = hebrew_text.find(sentence, index_start_hebrew_text) + len(sentence) + 1
 
-                # Add the image to the content list
+            # Add the Hebrew paragraph text to the downloadable content
+            downloadable_content.append(hebrew_text[index_start_hebrew_text:end_index])
+            st.markdown(f'<p class="hebrew-text">{hebrew_text[index_start_hebrew_text:end_index]}</p>',
+                        unsafe_allow_html=True)
+
+            # Update the start index for the next paragraph
+            index_start_hebrew_text = end_index
+
+            # Add the image if it exists and was selected
+            if image_info is not None:
+                image_bytes, _ = image_info  # `_` because we don't need to check `selected` anymore
+                # Display the image below the corresponding paragraph
                 st.image(image_bytes)
                 image_base64 = base64.b64encode(image_bytes).decode('utf-8')
-                downloadable_content.append(image_base64)
+                downloadable_content.append(image_base64)  # Add image to the content list
+            else:
+                # Add a placeholder or just skip appending an image to maintain content alignment
+                downloadable_content.append(None)
 
-                index_start_hebrew_text = end_index
-
-        # Add the remaining text after the last image
+        # Add any remaining text after the last image
         downloadable_content.append(hebrew_text[index_start_hebrew_text:])
         st.markdown(f'<p class="hebrew-text">{hebrew_text[index_start_hebrew_text:]}</p>', unsafe_allow_html=True)
+
+        # Reset session state flags
         st.session_state.done_button_clicked = False
         st.session_state.selected_images = []
 
@@ -153,7 +169,7 @@ def on_done_button_click(hebrew_text, hebrew_best_sentences_each_par, title_of_s
         # Add a download button for the generated PDF
         download_label = "לחצו כאן להורדת הסיפור שלכם עם האיורים"
         download_button_html = f"""
-        <a href="data:application/pdf;base64,{base64.b64encode(pdf_result).decode()}" download="story.pdf">
+        <a href="data:application/pdf;base64,{base64.b64encode(pdf_result).decode()}" download="{title_of_story}.pdf">
             <div class="download-button">{download_label}</div>
         </a>
         """
@@ -165,13 +181,15 @@ def on_done_button_click(hebrew_text, hebrew_best_sentences_each_par, title_of_s
                                                       only_images=True)
         convert_to_pdf = generate_pdf(download_images_content)
         download_images_button_html = f"""
-        <a href="data:application/pdf;base64,{base64.b64encode(convert_to_pdf).decode()}" download="images.pdf">
+        <a href="data:application/pdf;base64,{base64.b64encode(convert_to_pdf).decode()}" download="{title_of_story}.pdf">
             <div class="download-button">{download_images_label}</div>
         </a>
         """
         st.markdown(download_images_button_html, unsafe_allow_html=True)
+
+        # Hide the loading overlay after processing
         time.sleep(6)
-        toggle_page(show=False)  # Hide the loading overlay after processing
+        toggle_page(show=False)
 
 
 def create_html_content(content, title_of_story, author_name, only_images=False):
@@ -220,12 +238,12 @@ def create_html_content(content, title_of_story, author_name, only_images=False)
             if not only_images:
                 html_content += f'<p class="hebrew-text-pdf">{item}</p>'
         else:  # Odd indices contain images
-            # Apply the spacing class only if generating the images-only PDF
-            if only_images:
-                img_tag = f'<div class="image-spacing"><img src="data:image/png;base64,{item}" alt="Image {i // 2}" class="resized-image-pdf"></div>'
-            else:
-                img_tag = f'<img src="data:image/png;base64,{item}" alt="Image {i // 2}" class="resized-image-pdf">'
-            html_content += f'{img_tag}'
+            if item:  # Only add the <img> tag if there is an image
+                if only_images:
+                    img_tag = f'<div class="image-spacing"><img src="data:image/png;base64,{item}" alt="Image {i // 2}" class="resized-image-pdf"></div>'
+                else:
+                    img_tag = f'<img src="data:image/png;base64,{item}" alt="Image {i // 2}" class="resized-image-pdf">'
+                html_content += f'{img_tag}'
 
     html_content += '</div></body></html>'
     return html_content
@@ -431,6 +449,7 @@ def group_sentences_by_paragraph(sentences):
     grouped_sentences = {}
     for sentence_info in sentences:
         paragraph_number, enhanced_sentence, _ = sentence_info
+        # st.write(f"Paragraph: {paragraph_number}, Sentence: {enhanced_sentence}")  # Log the sentences and paragraph numbers
         if paragraph_number not in grouped_sentences:
             grouped_sentences[paragraph_number] = []
         grouped_sentences[paragraph_number].append(enhanced_sentence)
