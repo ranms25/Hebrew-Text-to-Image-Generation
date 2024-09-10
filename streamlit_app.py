@@ -101,42 +101,50 @@ def on_done_button_click(hebrew_text, hebrew_best_sentences_each_par, title_of_s
     - author_name: The name of the author.
     """
     toggle_page(content="🎨 יוצר את הסיפור")
-    # Set the "done" state to True
-    st.session_state.done = True
+    st.session_state.done = True  # Set the "done" state to True
 
-    # Check if there are any selected images to process
-    if len(st.session_state.selected_images) == 0 or all(
-            image_info[0] is None for image_info in st.session_state.selected_images):
+    # Ensure that there are selected images or proceed without images
+    if len(st.session_state.selected_images) == 0 or all(image_info[0] is None for image_info in st.session_state.selected_images):
         return
 
-    # Ensure the `selected_images` list is the same length as paragraphs
+    # Ensure `selected_images` list is consistent with paragraphs
     consistent_images = []
     for i, image_info in enumerate(st.session_state.selected_images):
-        if st.session_state[f"checkbox_{i}"]:
+        if st.session_state.get(f"checkbox_{i}"):
             consistent_images.append(image_info)
         else:
-            consistent_images.append(None)  # Placeholder for paragraphs without selected images
+            consistent_images.append(None)
 
-    # Update session state to store the consistent list of images
+    # Update session state with the consistent list of images
     st.session_state.selected_images = consistent_images
 
     # Create a list to store the content (text + images) for the PDF
     downloadable_content = []
     index_start_hebrew_text = 0
 
-    # Wrap results in an expander, allowing users to collapse/expand the section
+    # Use an expander to wrap the results
     with st.expander("", expanded=True):
         for i, image_info in enumerate(st.session_state.selected_images):
-            # Get the corresponding sentence from the paragraph mapping
-            sentence = hebrew_best_sentences_each_par[i][1]
+            # Get the sentence from the paragraph mapping
+            sentence = hebrew_best_sentences_each_par[i][0]
 
-            # Find the end index of the current paragraph
-            end_index = hebrew_text.find(sentence, index_start_hebrew_text) + len(sentence) + 1
+            # Find the correct position of the sentence in the Hebrew text
+            end_index = hebrew_text.find(sentence, index_start_hebrew_text)
+            if end_index == -1:
+                # If the sentence is not found, continue with the next paragraph
+                continue
 
-            # Add the Hebrew paragraph text to the downloadable content
-            downloadable_content.append(hebrew_text[index_start_hebrew_text:end_index])
-            st.markdown(f'<p class="hebrew-text">{hebrew_text[index_start_hebrew_text:end_index]}</p>',
-                        unsafe_allow_html=True)
+            # Ensure we capture the sentence including the period (.) at the end
+            end_index += len(sentence)
+
+            # Check if the next character is a period or punctuation, and include it
+            if end_index < len(hebrew_text) and hebrew_text[end_index] in ['.', '!', '?']:
+                end_index += 1  # Include the punctuation in the current paragraph
+
+            # Extract and display the paragraph text (only once)
+            paragraph_text = hebrew_text[index_start_hebrew_text:end_index]
+            downloadable_content.append(paragraph_text)
+            st.markdown(f'<p class="hebrew-text">{paragraph_text}</p>', unsafe_allow_html=True)
 
             # Update the start index for the next paragraph
             index_start_hebrew_text = end_index
@@ -152,9 +160,11 @@ def on_done_button_click(hebrew_text, hebrew_best_sentences_each_par, title_of_s
                 # Add a placeholder or just skip appending an image to maintain content alignment
                 downloadable_content.append(None)
 
-        # Add any remaining text after the last image
-        downloadable_content.append(hebrew_text[index_start_hebrew_text:])
-        st.markdown(f'<p class="hebrew-text">{hebrew_text[index_start_hebrew_text:]}</p>', unsafe_allow_html=True)
+        # Append any remaining text after the last paragraph
+        if index_start_hebrew_text < len(hebrew_text):
+            remaining_text = hebrew_text[index_start_hebrew_text:]
+            downloadable_content.append(remaining_text)
+            st.markdown(f'<p class="hebrew-text">{remaining_text}</p>', unsafe_allow_html=True)
 
         # Reset session state flags
         st.session_state.done_button_clicked = False
@@ -181,7 +191,7 @@ def on_done_button_click(hebrew_text, hebrew_best_sentences_each_par, title_of_s
                                                       only_images=True)
         convert_to_pdf = generate_pdf(download_images_content)
         download_images_button_html = f"""
-        <a href="data:application/pdf;base64,{base64.b64encode(convert_to_pdf).decode()}" download="{title_of_story}.pdf">
+        <a href="data:application/pdf;base64,{base64.b64encode(convert_to_pdf).decode()}" download="{title_of_story}_images.pdf">
             <div class="download-button">{download_images_label}</div>
         </a>
         """
@@ -368,6 +378,8 @@ async def fetch_images_async(model_name, best_sentences, sentence_mapping, gener
     The function distributes tasks to fetch images from both primary and fallback space models.
     """
     grouped_sentences = group_sentences_by_paragraph(best_sentences)
+    # st.write(f'grouped_sentences:{grouped_sentences}')
+    # st.write(f'hebrew_best_sentences_each_par:{hebrew_best_sentences_each_par}')
     gradio_clients = [
         Client("RanM/text2image_1"),
         Client("RanM/text2image_2"),
@@ -438,22 +450,27 @@ def show_enhanced_images(model_name, best_sentences, sentence_mapping, general_d
 
 def group_sentences_by_paragraph(sentences):
     """
-    Groups the enhanced sentences by their respective paragraph numbers.
+    Groups the enhanced sentences by their respective paragraph numbers
+    and ensures they are sorted in the correct order.
 
     Parameters:
     - sentences: List of enhanced sentences with paragraph numbers.
 
     Returns:
-    - grouped_sentences: A dictionary where keys are paragraph numbers and values are lists of enhanced sentences.
+    - grouped_sentences: A dictionary where keys are paragraph numbers and
+      values are lists of enhanced sentences, sorted by paragraph numbers.
     """
     grouped_sentences = {}
     for sentence_info in sentences:
         paragraph_number, enhanced_sentence, _ = sentence_info
-        # st.write(f"Paragraph: {paragraph_number}, Sentence: {enhanced_sentence}")  # Log the sentences and paragraph numbers
         if paragraph_number not in grouped_sentences:
             grouped_sentences[paragraph_number] = []
         grouped_sentences[paragraph_number].append(enhanced_sentence)
-    return grouped_sentences
+
+    # Sort paragraphs by their paragraph number to ensure correct display order
+    sorted_grouped_sentences = {k: grouped_sentences[k] for k in sorted(grouped_sentences.keys())}
+    # st.write(f'sorted_grouped_sentences:{sorted_grouped_sentences}')
+    return sorted_grouped_sentences
 
 
 def check_model_availability(model_names):
@@ -612,7 +629,7 @@ def main():
                 best_sentences = generate_best_sentence(summarized_paragraphs)
                 # st.write("best_sentences:", best_sentences)
                 hebrew_best_sentences_each_par = align_hebrew_best_sentences(best_sentences, user_input_hebrew)
-                # st.write("best_sentences:", best_sentences)
+                # st.write("hebrew_best_sentences_each_par:", hebrew_best_sentences_each_par)
                 progress_bar.progress(55, text="איזה כיף! עוד כמה רגעים נתחיל בהצגת האיורים")  # Update progress
                 # Check if best_sentences is not empty before proceeding
                 if best_sentences:

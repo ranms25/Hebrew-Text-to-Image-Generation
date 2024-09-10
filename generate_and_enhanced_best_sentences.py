@@ -441,5 +441,5 @@ def extract_main_characters(sentence, proper_noun_weight=0.3, boost_factor=1.2):
         combined_characters.append(best_match)
 
     capitalized_characters = [character.capitalize() for character in combined_characters]
-    print(capitalized_characters)
+    # print(capitalized_characters)
     return capitalized_characters
