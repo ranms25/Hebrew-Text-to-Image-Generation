@@ -39,7 +39,7 @@ ner_pipeline = pipeline(task="ner", model=model_ner, tokenizer=tokenizer_ner, de
 # API_URL = "https://api-inference.huggingface.co/models/google/gemma-7b-it"
 # API_URL = "https://api-inference.huggingface.co/models/bigcode/starcoder2-15b"
 # API_URL = "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.2"
-API_URL = "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.3"
+API_URL = "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.2"
 # API_URL = "https://api-inference.huggingface.co/models/microsoft/Phi-3-mini-4k-instruct"
 
 
