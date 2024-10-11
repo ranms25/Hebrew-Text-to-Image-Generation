@@ -20,8 +20,8 @@ import nltk
 from collections import Counter
 import streamlit as st
 from text_segmentation import nlp
-nltk.download("punkt")  # Download the Punkt sentence tokenizer
 
+nltk.download("punkt")  # Download the Punkt sentence tokenizer
 
 # Load BERT-based model specifically trained for part-of-speech tagging
 model_name_ner = "QCRI/bert-base-multilingual-cased-pos-english"
@@ -39,7 +39,7 @@ ner_pipeline = pipeline(task="ner", model=model_ner, tokenizer=tokenizer_ner, de
 # API_URL = "https://api-inference.huggingface.co/models/google/gemma-7b-it"
 # API_URL = "https://api-inference.huggingface.co/models/bigcode/starcoder2-15b"
 # API_URL = "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.2"
-API_URL = "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.2"
+# API_URL = "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.3"
 # API_URL = "https://api-inference.huggingface.co/models/microsoft/Phi-3-mini-4k-instruct"
 
 
@@ -82,20 +82,6 @@ weight_ner = 0.3  # Weight for NER score
 weight_pos = 0.3  # Weight for POS score
 weight_descriptive = 0.3  # Weight for descriptive word density
 weight_length = 0.1  # Weight for sentence length
-
-
-def query(payload):
-    """
-    Make a request to the Hugging Face model API with the given payload.
-
-    Parameters:
-        - payload (dict): The payload to be sent in the API request.
-
-    Returns:
-        dict: The JSON response from the API.
-    """
-    response = requests.post(API_URL, headers=HEADERS, json=payload)
-    return response.json()
 
 
 def generate_best_sentence(paragraphs_summary):
@@ -264,6 +250,83 @@ def generate_enhanced_text(sentences_list, progress_bar):
     )
 
 
+def query_and_extract(character, context_text, retries=2):
+    """
+    Query the Hugging Face API to generate a description for a character.
+    If the original model fails after `retries` attempts, switch to a backup model for another `retries` attempts.
+
+    Parameters:
+        - character (str): The name of the character to describe.
+        - context_text (str): The context that can influence the character's description.
+        - retries (int): The number of attempts for each model (original and backup).
+
+    Returns:
+        dict: The generated character description, or an empty dictionary if all attempts fail.
+    """
+    # URL for the original model
+    original_model_url = "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.3"
+    # URL for the backup model in case the original model fails
+    backup_model_url = "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.2"
+
+    def make_request(model_url, character, context_text):
+        """
+        Sends a POST request to the given model URL to generate a description based on the provided character and context.
+
+        Parameters:
+            - model_url (str): The API URL of the model to send the request to.
+            - character (str): The name of the character to describe.
+            - context_text (str): The context influencing the description.
+
+        Returns:
+            dict: The JSON response from the model.
+        """
+        # Create a prompt with specific instructions for generating a description
+        prompt = (
+            f"Describe the physical appearance of '{character}' in simple terms that are easy to draw for children's storybook. "
+            f"Focus on features like size (e.g., small), height (e.g., tall), shape (e.g., broad), form (e.g., muscular), "
+            f"color (e.g., blue eyes), and texture (e.g., rough). "
+            f"The description must be limited to one sentence and include exactly four descriptive words, "
+            f"structured in the format: "
+            f"'CharacterName is an EntityType with first_description_word, second_description_word, "
+            f"third_description_word, fourth_description_word' "
+            f"\nCharacter: {character}\n"
+            f"\nContext: {context_text}\n"
+            f"\nGenerate the description here below:"
+        )
+        # Payload contains the input for the model
+        payload = {"inputs": prompt}
+        # Sending the request to the model API with the appropriate headers (e.g., API key)
+        response = requests.post(model_url, headers=HEADERS, json=payload)
+        # Return the model's JSON response
+        return response.json()
+
+    # Try to generate the description with the original model for the specified number of attempts
+    for attempt in range(retries):
+        # Request description from the original model
+        output = make_request(original_model_url, character, context_text)
+        if output:
+            # Extract the description from the output using the existing extraction function
+            description = extract_characteristics(output[0].get("generated_text", ""))
+            if description:
+                # Return the description if successfully generated
+                return description
+
+    # If the original model fails, try the backup model for the specified number of attempts
+    for attempt in range(retries):
+        # Request description from the backup model
+        output = make_request(backup_model_url, character, context_text)
+        if output:
+            # Extract the description from the output
+            description = extract_characteristics(output[0].get("generated_text", ""))
+            if description:
+                # Return the description if successfully generated from the backup model
+                return description
+
+    # If all attempts fail, print an error message and return an empty dictionary
+    print(f"Failed to generate description for {character} after {2 * retries} attempts.")
+    return {}
+
+
 def extract_characteristics(generated_text):
     """
     Extracts character descriptions from the generated text based on a specific pattern.
@@ -284,72 +347,30 @@ def extract_characteristics(generated_text):
     return None
 
 
+# Modified `generate_general_descriptions` function to handle retries and model switching
 def generate_general_descriptions(characters, text, max_retries=2):
     """
     Generates general descriptions for a list of characters based on their context within the provided text.
+    If the original model fails, it switches to a backup model for two additional attempts.
 
     Parameters:
         - characters (list): List of character names to generate descriptions for.
         - text (str): The context text that may influence the character descriptions.
-        - max_retries (int): Maximum number of attempts to generate a description for each character.
+        - max_retries (int): Maximum number of attempts per model (both original and backup) to generate a description.
 
     Returns:
         dict: A dictionary mapping each character to its generated description.
     """
-    def query_and_extract(character, context_text):
-        try:
-            # Directly format the prompt for a single character with context
-            prompt = (
-                f"Describe the physical appearance of '{character}' in simple terms that are easy to draw for children's storybook. "
-                f"Focus on features like size (e.g., small), height (e.g., tall), shape (e.g., broad), form (e.g., muscular), "
-                f"color (e.g., blue eyes), and texture (e.g., rough). "
-                f"The description must be limited to one sentence and include exactly four descriptive words, "
-                f"structured in the format: "
-                f"'CharacterName is an EntityType with first_description_word, second_description_word, "
-                f"third_description_word, fourth_description_word' "
-                f"The output should follow these examples:\n"
-                f"'Ron is a man with dark eyes, tall stature, thin build, black hair.'\n"
-                f"'Alisa is a woman with big blue eyes, blonde long hair, slim figure, and fair skin.'\n"
-                f"'Max is a dog with brown fur, small size, big brown eyes, and fluffy tail.'\n"
-                f"'The Moon is a celestial body with a silver color, round shape, rigid texture, and bright glow.'\n"
-                f"'The Tree is an object with green leaves, tall height,thick trunk,and leafy structure.'\n"
-                f"\nCharacter: {character}\n"
-                f"\nContext: {context_text}\n"
-                f"\nGenerate the description here below:"
-            )
-            payload = {
-                "inputs": prompt,
-            }
-
-            # Perform the API request
-            output = query(payload)
-            if isinstance(output, list) and len(output) > 0:
-                generated_text = output[0].get("generated_text", "No text generated")
-                # print(f'generated_text: {generated_text}')
-                return extract_characteristics(generated_text)
-            else:
-                # print("No descriptions generated.")
-                return {}
-        except Exception as e:
-            # print(f"Error during API query: {str(e)}")
-            return {}
-
-    # Retry logic for generating descriptions
+    # Dictionary to store descriptions for each character
     character_descriptions = {}
+    # Loop through each character to generate a description
     for character in characters:
-        for attempt in range(max_retries):
-            # print(f"Attempt {attempt + 1}: Generating description for: {character}")
-            new_description = query_and_extract(character, text)
-            if new_description:
-                character_descriptions[character] = new_description
-                break
-            else:
-                print(f"No description generated for {character} on attempt {attempt + 1}.")
-
-    if not character_descriptions:
-        # print("No descriptions were generated after all attempts.")
-        return {}
-
+        # Use the query_and_extract function to generate the description with retries and model switching
+        character_description = query_and_extract(character, text, retries=max_retries)
+        if character_description:
+            # Store the generated description in the dictionary
+            character_descriptions[character] = character_description
+    # Return the dictionary with generated descriptions
     return character_descriptions
 
 

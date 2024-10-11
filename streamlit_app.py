@@ -630,8 +630,8 @@ def main():
                 # st.write("best_sentences:", best_sentences)
                 hebrew_best_sentences_each_par = align_hebrew_best_sentences(best_sentences, user_input_hebrew)
                 # Iterate over each tuple in the list and replace newlines in the sentence (first element of the tuple)
-                hebrew_best_sentences_each_par = [(sentence.replace('\n', ' '), index) for sentence, index in
-                                                  hebrew_best_sentences_each_par]
+                # hebrew_best_sentences_each_par = [(sentence.replace('\n', ' '), index) for sentence, index in
+                #                                   hebrew_best_sentences_each_par]
                 #st.write("hebrew_best_sentences_each_par:", hebrew_best_sentences_each_par)
                 progress_bar.progress(55, text="איזה כיף! עוד כמה רגעים נתחיל בהצגת האיורים")  # Update progress
                 # Check if best_sentences is not empty before proceeding
