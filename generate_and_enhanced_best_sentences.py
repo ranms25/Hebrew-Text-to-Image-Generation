@@ -288,7 +288,7 @@ def query_and_extract(character, context_text, retries=2):
             f"The description must be limited to one sentence and include exactly four descriptive words, "
             f"structured in the format: "
             f"'CharacterName is an EntityType with first_description_word, second_description_word, "
-            f"third_description_word, fourth_description_word' "
+            f"third_description_word, fourth_description_word'."
             f"\nCharacter: {character}\n"
             f"\nContext: {context_text}\n"
             f"\nGenerate the description here below:"
@@ -338,7 +338,8 @@ def extract_characteristics(generated_text):
         list: List of extracted character descriptions, or None if not found.
     """
     # Find all occurrences of "Generate the description here below:"
-    pattern = r"Generate the description here below:\s*['\"]?([^'\"]+)"
+    # pattern = r"Generate the description here below:\s*['\"]?([^'\"]+)"
+    pattern = r"Generate the description here below:\s*['\"]?([^\n'\"]+?[\.\!\?])['\"]?"
     matches = re.findall(pattern, generated_text, re.DOTALL)
 
     # If matches are found, return the list of descriptions
